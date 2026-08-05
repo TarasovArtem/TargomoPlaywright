@@ -23,6 +23,8 @@ Playwright E2E test suite for the [Targomo](https://poi.targomo.com) POI (points
     api.targomo.com/pointofinterest/**/*.mvt with the matching group id -
     verifying the app actually fetches the right data, not just a UI toggle.
 
+See [TEST_CASES.md](TEST_CASES.md) for the full list of test cases covered by this suite, with preconditions, steps, and expected results for each.
+
 
 ### Commands for running tests and file structure
 
