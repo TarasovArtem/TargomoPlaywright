@@ -46,10 +46,22 @@ jobs:
       - name: Install Playwright browser (${{ matrix.project }})
         run: npx playwright install --with-deps ${{ matrix.project }}
 
+      # Headless Firefox on Linux can't create a WebGL context at all, and
+      # this app's map is WebGL-rendered - playwright.config.ts runs Firefox
+      # headed in CI to work around it, which needs a real (virtual) display.
+      - name: Install xvfb (Firefox only)
+        if: matrix.project == 'firefox'
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       # baseURL in playwright.config.ts points at the externally hosted app,
       # so there is nothing to build or serve locally before running tests.
       - name: Run Playwright E2E tests (${{ matrix.project }})
-        run: npx playwright test --project=${{ matrix.project }}
+        run: |
+          if [ "${{ matrix.project }}" = "firefox" ]; then
+            xvfb-run --auto-servernum npx playwright test --project=firefox
+          else
+            npx playwright test --project=${{ matrix.project }}
+          fi
 
       - name: Upload Playwright report
         if: always()

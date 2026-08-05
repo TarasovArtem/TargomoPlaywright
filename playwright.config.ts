@@ -34,17 +34,17 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
-        // The map is WebGL-rendered (MapLibre). Headless Firefox on the
-        // Ubuntu CI runner otherwise never initializes it - the map area
-        // renders blank and no tile requests ever fire (confirmed via a
-        // failure screenshot from an actual CI run). Force software WebGL.
-        launchOptions: {
-          firefoxUserPrefs: {
-            'webgl.force-enabled': true,
-            'webgl.disabled': false,
-            'layers.acceleration.force-enabled': true,
-          },
-        },
+        // Headless Firefox on Linux cannot create a WebGL context at all
+        // ("Failed to create WebGL context: WebGL creation failed" -
+        // confirmed via browser console logging captured from an actual CI
+        // run). This map is WebGL-rendered (MapLibre), so with no context
+        // it never loads tiles and no .mvt requests ever fire. Firefox
+        // user-pref overrides (webgl.force-enabled etc.) do not fix this -
+        // it needs a real GL init path, which headed Firefox under a
+        // virtual display provides. Runs headed in CI (see the workflow's
+        // xvfb-run wrapper for the firefox job); stays headless locally on
+        // Windows, where this was never an issue.
+        headless: !process.env.CI,
       },
     },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
