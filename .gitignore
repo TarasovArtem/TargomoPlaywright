@@ -1,0 +1,7 @@
+node_modules
+test-results
+playwright-report
+playwright/.cache
+npm-debug.log*
+debug.log
+CLAUDE.md

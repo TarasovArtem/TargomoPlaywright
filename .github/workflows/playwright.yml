@@ -1,0 +1,61 @@
+name: Playwright E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  playwright-tests:
+    name: Playwright - ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Playwright's browser cache is separate from npm's package cache -
+      # each browser is its own multi-hundred-MB download, cached by the
+      # resolved @playwright/test version so unchanged runs skip it.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # OS-level dependencies aren't covered by the cache above and must be
+      # installed every run on these ephemeral runners regardless of a
+      # browser-binary cache hit.
+      - name: Install Playwright browser (${{ matrix.project }})
+        run: npx playwright install --with-deps ${{ matrix.project }}
+
+      # baseURL in playwright.config.ts points at the externally hosted app,
+      # so there is nothing to build or serve locally before running tests.
+      - name: Run Playwright E2E tests (${{ matrix.project }})
+        run: npx playwright test --project=${{ matrix.project }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
