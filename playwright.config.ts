@@ -30,7 +30,23 @@ export default defineConfig({
 
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        // The map is WebGL-rendered (MapLibre). Headless Firefox on the
+        // Ubuntu CI runner otherwise never initializes it - the map area
+        // renders blank and no tile requests ever fire (confirmed via a
+        // failure screenshot from an actual CI run). Force software WebGL.
+        launchOptions: {
+          firefoxUserPrefs: {
+            'webgl.force-enabled': true,
+            'webgl.disabled': false,
+            'layers.acceleration.force-enabled': true,
+          },
+        },
+      },
+    },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
 });
