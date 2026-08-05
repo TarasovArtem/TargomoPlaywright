@@ -12,6 +12,18 @@ test.describe('POI data requests triggered by tree selection', () => {
   let subCategories: SubCategories;
 
   test.beforeEach(async ({ page }) => {
+    // TEMP DIAGNOSTIC - remove once the Firefox/CI map-not-loading issue is
+    // root-caused. Surfaces browser console/page errors and every
+    // maptiler/targomo network request in the CI job log.
+    page.on('console', (msg) => console.log(`[browser:${msg.type()}] ${msg.text()}`));
+    page.on('pageerror', (err) => console.log(`[pageerror] ${err.message}`));
+    page.on('requestfailed', (req) => console.log(`[requestfailed] ${req.url()} - ${req.failure()?.errorText}`));
+    page.on('request', (req) => {
+      if (req.url().includes('maptiler') || req.url().includes('targomo')) {
+        console.log(`[request] ${req.method()} ${req.url()}`);
+      }
+    });
+
     navigation = new Navigation(page);
     categories = new Categories(page);
     subCategories = new SubCategories(page);
