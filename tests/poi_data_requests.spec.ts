@@ -19,13 +19,13 @@ test.describe('POI data requests triggered by tree selection', () => {
   });
 
   test('should request gastronomy POI tiles when the Gastronomy category is selected', async ({ page }) => {
-    // Explicit timeout: waitForRequest otherwise inherits actionTimeout (10s),
-    // which was occasionally too tight for this specific third-party tile
-    // request under CI network conditions (observed failing on Firefox/Ubuntu
-    // while consistently passing locally).
+    // A bit more headroom than the default actionTimeout for a third-party
+    // tile request over real network. The actual CI failure here turned out
+    // to be an undismissed cookie-consent dialog blocking the map (fixed in
+    // Navigation.navigate()), not this timeout - kept as a modest buffer.
     const requestPromise = page.waitForRequest(
       (req) => req.url().includes('/pointofinterest/') && req.url().includes('.mvt'),
-      { timeout: 20000 }
+      { timeout: 15000 }
     );
     await categories.getGastronomy().click();
     const request = await requestPromise;
@@ -33,13 +33,13 @@ test.describe('POI data requests triggered by tree selection', () => {
   });
 
   test('should request restaurant POI tiles when the Restaurant subcategory is selected', async ({ page }) => {
-    // Explicit timeout: waitForRequest otherwise inherits actionTimeout (10s),
-    // which was occasionally too tight for this specific third-party tile
-    // request under CI network conditions (observed failing on Firefox/Ubuntu
-    // while consistently passing locally).
+    // A bit more headroom than the default actionTimeout for a third-party
+    // tile request over real network. The actual CI failure here turned out
+    // to be an undismissed cookie-consent dialog blocking the map (fixed in
+    // Navigation.navigate()), not this timeout - kept as a modest buffer.
     const requestPromise = page.waitForRequest(
       (req) => req.url().includes('/pointofinterest/') && req.url().includes('.mvt'),
-      { timeout: 20000 }
+      { timeout: 15000 }
     );
     await subCategories.getGastronomyExpandButton().click();
     await subCategories.getRestaurant().click();
