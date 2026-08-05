@@ -92,3 +92,14 @@ The pipeline:
 3. Installs the matrix browser's binary (`playwright install --with-deps`)
 4. Runs the Playwright E2E suite against the live app (Chromium, Firefox, and WebKit, each as a separate CI job)
 5. Uploads the HTML report (traces + screenshots on failure) as a workflow artifact
+
+
+### Engineering notes
+
+Three real, non-obvious issues surfaced while getting this suite green on actual GitHub Actions runners — not theoretical, all confirmed with evidence from real CI runs before being fixed:
+
+**Playwright's default parallelism overloaded a live external site.** Unlike a project's own test server, `poi.targomo.com` isn't something this repo scales to handle concurrent hits from. Playwright's default 4 parallel workers produced real timeouts (6/10 passing); running sequentially fixed it outright (10/10). `playwright.config.ts` sets `fullyParallel: false` / `workers: 1` deliberately, with the reasoning left in a comment so it doesn't get "optimized" away later.
+
+**An undismissed cookie-consent dialog was silently blocking the map.** Playwright gives every test a fresh browser context (unlike Cypress, which can carry cookies across `it()` blocks within one spec run), so the dialog genuinely reappeared on every single test here. Confirmed by downloading a failed run's accessibility-snapshot artifact from GitHub Actions and finding the dialog present, with `Restaurant` shown as `[checked]` right next to it — the click worked, the dialog just sat on top of the map. Fixed in `Navigation.navigate()`.
+
+**Headless Firefox on Linux silently failed to render the map at all.** After the two fixes above, `poi_data_requests.spec.ts` still timed out on Firefox only, in CI only. Downloading the failure screenshot showed a completely blank map area. Adding temporary browser-console logging (pushed to CI, inspected via `gh run view --log`) surfaced the real error: `Failed to create WebGL context: WebGL creation failed`. This app's map is WebGL-rendered (MapLibre), and headless Firefox on Linux can't initialize a GL context at all — so it never requested a single tile. Firefox user-pref overrides (`webgl.force-enabled`, etc.) did not fix it: the failure screenshot was byte-for-byte identical before and after. The actual fix runs Firefox headed under a virtual display (`xvfb-run`) in CI only (`playwright.config.ts`'s `headless: !process.env.CI` + the workflow's `xvfb` step) — headless locally on Windows was never affected.
